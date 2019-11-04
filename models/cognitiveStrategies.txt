@@ -1,0 +1,72 @@
+# Cognitive Strategies Model, first stage (infer modal strategy)
+data{
+  for (j in 1:nPositions){
+    cutPoint[j] = j
+  }
+}
+
+model{
+
+     for (k in 1:nProblems){
+       # data
+       y[k] ~ dcat(theta[1:nPositions, k, z])
+       # threshold model
+       for (j in 1:(nPositions-1)){
+         above[j, k, 1] = step(v[k, j] - tau[j, 1])
+         above[j, k, 2] = step(v[k, j] - tau[j, 2])
+         above[j, k, 3] = step(v[k, j] - tau[j, 3])
+       }
+       firstAbove[1, k, 1] = equals(above[1, k, 1], 1)
+       firstAbove[1, k, 2] = equals(above[1, k, 2], 1)
+       firstAbove[1, k, 3] = equals(above[1, k, 3], 1)
+       for (j in 2:(nPositions-1)){
+         firstAbove[j, k, 1] = prod(1 - firstAbove[1:(j-1), k, 1]) * above[j, k, 1]
+         firstAbove[j, k, 2] = prod(1 - firstAbove[1:(j-1), k, 2]) * above[j, k, 2]
+         firstAbove[j, k, 3] = prod(1 - firstAbove[1:(j-1), k, 3]) * above[j, k, 3]
+       }
+       for (j in 1:(nPositions-1)){
+         theta[j, k, 1] = ifelse(equals(firstAbove[j, k, 1], 1), epsilon[1], (1-epsilon[1])/(nPositions-1))
+         theta[j, k, 2] = ifelse(equals(firstAbove[j, k, 2], 1), epsilon[2], (1-epsilon[2])/(nPositions-1))
+         theta[j, k, 3] = ifelse(equals(firstAbove[j, k, 3], 1), epsilon[3], (1-epsilon[3])/(nPositions-1))
+       }
+       theta[nPositions, k, 1] = 1 - sum(theta[1:(nPositions-1), k, 1])
+       theta[nPositions, k, 2] = 1 - sum(theta[1:(nPositions-1), k, 2])
+       theta[nPositions, k, 3] = 1 - sum(theta[1:(nPositions-1), k, 3])
+
+       # geometric contaminant model
+       theta[1, k, 4] = gamma
+       for (j in 2:(nPositions-1)){
+         theta[j, k, 4] = (1-gamma)^(j-1)*gamma
+       }
+       theta[nPositions, k, 4] = 1 - sum(theta[1:(nPositions-1), k, 4])
+       # random uniform choice over positions contaminant model
+       for (j in 1:nPositions){
+         theta[j, k, 5] = 1/nPositions
+       }
+     }
+
+   # thresholds
+   for (j in 1:(nPositions-1)){
+     tau[j, 1] = alpha[1]
+     tau[j, 2] = max(0, min(100, alpha[2] - delta[1] * j))
+     tau[j, 3] = max(0, min(100, alpha[3] - step(j - beta - 1) * delta[2] * (j - beta)))
+   }
+	 tau[nPositions, 1] = 0
+   tau[nPositions, 2] = 0
+   tau[nPositions, 3] = 0
+
+   # priors
+   z ~ dcat(c(1, 1, 1, 1, 1))
+   
+   for (i in 1:3){
+     alpha[i] ~ dunif(0, 100)
+     epsilon[i] ~ dunif(0.5, 1)
+   }
+   betaTmp  ~ dunif(1, nPositions-1)
+   beta1 ~ dinterval(betaTmp, cutPoint)
+   beta = beta1 + 1
+   for (i in 1:2){
+     delta[i] ~ dnorm(5, 1/20^2)T(0, 100)
+   }
+   gamma ~ dunif(0.8, 1)
+}
