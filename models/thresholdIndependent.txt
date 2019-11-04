@@ -1,0 +1,44 @@
+# independent-threshold model
+
+model{
+
+   for (i in 1:nSubjects){
+     for (k in 1:nProblems){
+       # data
+       y[i, k] ~ dcat(theta[i, 1:nPositions, k, z[i]])
+       predy[i, k] = theta[i, y[i, k], k, z[i]]
+       # threshold model
+       for (j in 1:nPositions){
+         above[i, j, k] = step(v[k, j] - tau[i, j])
+       }
+       firstAbove[i, 1, k] = equals(above[i, 1, k], 1)
+       for (j in 2:nPositions){
+         firstAbove[i, j, k] = prod(1 - firstAbove[i, 1:(j-1), k]) * above[i, j, k]
+       }
+       for (j in 1:nPositions){
+         theta[i, j, k, 1] = ifelse(equals(firstAbove[i, j, k], 1), alpha[i], (1-alpha[i])/(nPositions-1))
+       }
+       # geometric contaminant model
+       theta[i, 1, k, 2] = gamma
+       for (j in 2:(nPositions-1)){
+         theta[i, j, k, 2] = (1-gamma)^(j-1)*gamma
+       }
+       theta[i, nPositions, k, 2] = 1 - sum(theta[i, 1:(nPositions-1), k, 2])
+       # random uniform choice over positions contaminant model
+       for (j in 1:nPositions){
+         theta[i, j, k, 3] = 1/nPositions
+       }
+     }
+   }
+	
+   # priors
+   for (i in 1:nSubjects){
+     z[i] ~ dcat(c(1, 1, 1))
+     alpha[i] ~ dunif(0.5, 1)
+     for (j in 1:(nPositions-1)){
+       tau[i, j] ~ dunif(0, 100)
+     }
+     tau[i, nPositions] = 0
+   }
+   gamma ~ dunif(0.8, 1)
+}
