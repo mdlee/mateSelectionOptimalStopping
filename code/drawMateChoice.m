@@ -5,7 +5,7 @@ close all;
 
 % user input
 
-doPrint = false;
+doPrint = true;
 
 % analyses
 analysisList = { ...
@@ -15,7 +15,8 @@ analysisList = { ...
    % 'Learning'                   ; ...
    % 'IndividualByEnvironment'    ; ...
    % 'ConsolidatedResults'        ; ...
-   % 'ConsolidatedResults2'       ; ... 
+   % 'ConsolidatedResults2'       ; ...
+    'ChosenInPosition2'           ; ...
    };
 
 % load data
@@ -774,6 +775,96 @@ for analysisIdx = 1:numel(analysisList)
             plot(binsC+eps, mean(propMax(:, :, envIdx)), 'o', ...
                'markeredgecolor', colors{envIdx}, ...
                'markerfacecolor', 'w');
+            
+         end
+         
+         case 'ChosenInPosition2'
+         
+         % constants
+         step = 2.5; scaleW = 10*1.5/5; scaleH = 80*1.5/5;
+         fontSize = 18;
+         jig = 0.2;
+         
+         % derived constants
+         binsC = step/2:step:(100-step/2);
+         binsE = 0:step:100;
+         
+         % figure
+         F = figure(3); clf; hold on;
+         set(F, ...
+            'color'             , 'w'               , ...
+            'units'             , 'normalized'      , ...
+            'position'          , [0.1 0.2 0.8 0.5] , ...
+            'paperpositionmode' , 'auto'            );
+         
+         % find values chosen and not chosen in each position and each environment
+         chosenCount = zeros(length(binsC), d.nPositions, d.nEnvironments);
+         notChosenCount = zeros(length(binsC), d.nPositions, d.nEnvironments);
+        for envIdx = 1:d.nEnvironments
+            for subjIdx = 1:d.nSubjects
+               for probIdx = 1:d.nProblems
+                  if d.decision(subjIdx, probIdx, envIdx) > 0
+                     tmpChosenCount = histc(d.values(probIdx, d.decision(subjIdx, probIdx, envIdx), envIdx), binsE);
+                     tmpChosenCount = tmpChosenCount(1:end-1)';
+                     chosenCount(:, d.decision(subjIdx, probIdx, envIdx), envIdx) = chosenCount(:, d.decision(subjIdx, probIdx, envIdx), envIdx) + tmpChosenCount;
+                     for decIdx = 1:(d.decision(subjIdx, probIdx, envIdx)-1)
+                         tmpNotChosenCount = histc(d.values(probIdx, decIdx, envIdx), binsE);
+                         tmpNotChosenCount = tmpNotChosenCount(1:end-1)';
+                         notChosenCount(:,decIdx, envIdx) = notChosenCount(:, decIdx, envIdx) + tmpNotChosenCount;
+                     end
+                  end
+               end
+            end
+         end
+         
+         for envIdx = 1:d.nEnvironments
+            chosenCount(:, :, envIdx) = chosenCount(:, :, envIdx)/sum(sum(chosenCount(:, :, envIdx)));
+             notChosenCount(:, :, envIdx) = notChosenCount(:, :, envIdx)/sum(sum(notChosenCount(:, :, envIdx)));
+         end
+         
+         % plot in each panel
+         for envIdx = 1:d.nEnvironments
+            subplot(1, d.nEnvironments, envIdx); cla; hold on;
+            set(gca, ...
+               'xlim'          , [0 d.nPositions+1]    , ...
+               'xtick'         , 1:d.nPositions        , ...
+               'xticklabel'    , xLabels               , ...
+               'ylim'          , [0 105]               , ...
+               'ytick'         , 0:10:100              , ...
+               'box'           , 'off'                 , ...
+               'tickdir'       , 'out'                 , ...
+               'layer'         , 'top'                 , ...
+               'ticklength'    , [0.01 0]              , ...
+               'fontsize'      , fontSize              );
+            xlabel(xlabels{envIdx}, 'fontsize', fontSize+2);
+            ylabel('Value', 'fontsize', fontSize+2);
+            
+            % plot
+            for trialIdx = 1:(d.nPositions-1)
+               for binIdx = 1:length(binsC)
+                  tmpVal = chosenCount(binIdx, trialIdx, envIdx);
+                  if tmpVal > 0
+                     width = scaleW*sqrt(tmpVal);
+                     height = scaleH*sqrt(tmpVal);
+                     rectangle('position', [trialIdx-width/2-jig, binsC(binIdx)-height/2, width, height], ...
+                        'facecolor' , colors{envIdx} , ...
+                        'edgecolor' , 'w'            , ...
+                        'curvature' , [1 1]          );
+                  end
+                  tmpVal = notChosenCount(binIdx, trialIdx, envIdx);
+                  if tmpVal > 0
+                     width = scaleW*sqrt(tmpVal);
+                     height = scaleH*sqrt(tmpVal);
+                     rectangle('position', [trialIdx-width/2+jig, binsC(binIdx)-height/2, width, height], ...
+                        'edgecolor' , colors{envIdx} , ...
+                        'facecolor' , 'w'            , ...
+                        'curvature' , [1 1]          );
+                  end
+               end
+            end
+            
+            plot(1:d.nPositions,  d.optimalThresholds{envIdx}, 'k-', ...
+               'linewidth', 2);
             
          end
          
