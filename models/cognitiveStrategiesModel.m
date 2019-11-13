@@ -15,7 +15,7 @@ drawGroup = false;
 drawGroupConditioned = false;
 drawMarginalParams = false;
 drawJointParams = false;
-drawDescriptiveAdequacy = false;
+drawDescriptiveAdequacy = true;
 strategyTable = false;
 
 doPrint = true;
@@ -141,7 +141,7 @@ for environment = 1:d.nEnvironments
         fprintf('==============\nSubject %d\n', subject);
         
         % model to infer strategies
-        modelName = 'cognitiveStrategies';
+        modelName = 'threshold_11';
         
         % parameters to monitor
         params = {'z'};
@@ -1016,13 +1016,12 @@ if drawDescriptiveAdequacy
     fprintf('Cognitive strategies overall descriptive adequacies are %1.2f and %1.2f for the female and male environments\n', ...
         squeeze(mean(mean(predy, 1), 2)));
     
-    
     % figure and axes
     F = figure(102); clf; hold on;
     set(F, ...
         'color'             , 'w'                , ...
         'units'             , 'normalized'       , ...
-        'position'          , [0.2 0.2 0.4 0.5] , ...
+        'position'          , [0.2 0.2 0.4 0.5]  , ...
         'paperpositionmode' , 'auto'             );
     
     set(gca, ...
@@ -1039,6 +1038,15 @@ if drawDescriptiveAdequacy
     xlabel('Independent Thresholds', 'fontsize', fontSize+2);
     ylabel('Cognitive Strategies', 'fontsize', fontSize+2);
     
+    % fake legend
+    plot([-100],[0], 'o', 'markeredgecolor', 'w', 'markerfacecolor', colorsLight{1}, 'markersize', 8);
+    plot([-100],[0], 's', 'markeredgecolor', 'w', 'markerfacecolor', colorsLight{2}, 'markersize', 8);
+    legend('female environment', 'male environment', ...
+        'autoupdate' , 'off'       , ...
+        'location'   , 'northwest' , ...
+        'box'        , 'off'       , ...
+        'fontsize'   , fontSize    );
+
     plot([0 1], [0 1], '--', ...
         'color', pantone.Titanium);
     

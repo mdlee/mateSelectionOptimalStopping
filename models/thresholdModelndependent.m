@@ -3,14 +3,14 @@
 clear; close all;
 
 %% User input
+% all participants using drawIndividuals = true
 dataName = 'mateChoice2019'; subjectList = 1:55;
-%dataName = 'mateChoice2019'; subjectList = [1 8 44]; nRows = 2; nCols = 3; % for draw select individuals option
-dataName = 'mateChoice2019'; subjectList = [44]; nRows = 1; nCols = 2; % for draw select individuals option
-
+% a subset of select participants using drawSelectIndividuals = true
+% dataName = 'mateChoice2019'; subjectList = [1 8 44]; nRows = 2; nCols = 3; % for draw select individuals option
+drawSelectIndividuals = false;
+drawGroup = true;
+doPrint = false;
 drawIndividuals = false;
-drawSelectIndividuals = true;
-drawGroup = false;
-doPrint = true;
 
 fontSize = 20;
 eps = 1; scale = 5; shift = 0.2; threshold = 0.0;
@@ -129,7 +129,7 @@ for environment = 1:d.nEnvironments
         'nPositions'  , d.nPositions                            , ...
         'nProblems'   , d.nProblems                             , ...
         'y'           , d.decision(subjectList, :, environment) , ...
-        'v'           , d.values(:, :, environ`generateStimuli.m` is  script for generating a representative set of problems for an environmentment)             );
+        'v'           , d.values(:, :, environment)             );
     
     if exist(['storage/' modelName '_' dataName '_env' int2str(environment) '.mat'], 'file')
         load(['storage/' modelName '_' dataName '_env' int2str(environment)], 'stats', 'chains', 'diagnostics', 'info');
@@ -193,7 +193,6 @@ for environment = 1:d.nEnvironments
        predy(:, :, environment) = get_matrix_from_coda(chains, 'predy', @mean);
     end
     gamma = codatable(chains, 'gamma', @mean);
-    phi = codatable(chains, 'phi', @mean);
     z = codatable(chains, 'z', @mean);
     zMode = codatable(chains, 'z', @mode);
     
